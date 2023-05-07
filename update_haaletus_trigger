@@ -8,7 +8,7 @@ CREATE TRIGGER `update_haaletus_trigger` BEFORE UPDATE ON `HAALETUS`
 
     SELECT MAX(haaletus_aeg) INTO voting_start FROM HAALETUS WHERE haaletaja_id = NEW.haaletaja_id;
     IF NEW.otsus <> OLD.otsus THEN
-        IF NEW.haaletus_aeg <= DATE_ADD(voting_start, INTERVAL 5 MINUTE) THEN
+        IF NEW.haaletus_aeg > DATE_ADD(voting_start, INTERVAL 5 MINUTE) THEN
             UPDATE TULEMUSED SET
                 arv_pool = arv_pool - CASE WHEN OLD.otsus = 'for' THEN 1 ELSE 0 END + CASE WHEN NEW.otsus = 'for' THEN 1 ELSE 0 END,
                 arv_vastu = arv_vastu - CASE WHEN OLD.otsus = 'against' THEN 1 ELSE 0 END + CASE WHEN NEW.otsus = 'against' THEN 1 ELSE 0 END
