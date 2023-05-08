@@ -1,0 +1,8 @@
+CREATE TABLE haaletaja (
+  haaletaja_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  eesnimi varchar(255),
+  perenimi varchar(255),
+  otsus enum('for', 'against'),
+  haaletus_aeg datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (haaletaja_id)
+);
