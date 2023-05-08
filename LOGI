@@ -1,0 +1,9 @@
+CREATE TABLE LOGI (
+  log_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  haaletaja_id int(11),
+  otsus enum('for', 'against'),
+  muutus_aeg datetime,
+  PRIMARY KEY (log_id),
+  KEY fk_haaletaja_id (haaletaja_id),
+  CONSTRAINT fk_haaletaja_id FOREIGN KEY (haaletaja_id) REFERENCES haaletaja (haaletaja_id)
+);
