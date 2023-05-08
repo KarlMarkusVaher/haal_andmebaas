@@ -1,19 +1,22 @@
 CREATE TRIGGER `insert_haaletus_trigger` AFTER INSERT ON `HAALETUS`
  FOR EACH ROW BEGIN
-  -- Update the corresponding row in the RESULTS table
-  UPDATE TULEMUSED 
-  SET haal_arv = haal_arv + 1, 
-      arv_pool = CASE WHEN NEW.otsus = 'for' THEN arv_pool + 1 ELSE arv_pool END, 
-      arv_vastu = CASE WHEN NEW.otsus = 'against' THEN arv_vastu + 1 ELSE arv_vastu END 
-  WHERE h_alguse_aeg = (SELECT MAX(h_alguse_aeg) FROM TULEMUSED) 
-    AND NOW() <= DATE_ADD((SELECT MAX(h_alguse_aeg) FROM TULEMUSED), INTERVAL 5 MINUTE);
-  
-  -- Insert a row into the LOGI table
-  INSERT INTO LOGI (haaletaja_id, otsus, muutus_aeg) 
-  VALUES (NEW.haaletaja_id, NEW.otsus, NOW());
-  
+  DECLARE num_votes INT;
+  SET num_votes = (SELECT SUM(haal_arv) FROM TULEMUSED);
+
   -- Check if the voting has ended
-  IF (SELECT SUM(haal_arv) FROM TULEMUSED) >= 11 THEN 
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The voting has ended. No more votes are allowed.'; 
+  IF num_votes >= 11 THEN 
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The voting has ended. No more votes are allowed. Too many people'; 
+  ELSE
+    -- Update the corresponding row in the RESULTS table
+    UPDATE TULEMUSED 
+    SET haal_arv = haal_arv + 1, 
+        arv_pool = CASE WHEN NEW.otsus = 'for' THEN arv_pool + 1 ELSE arv_pool END, 
+        arv_vastu = CASE WHEN NEW.otsus = 'against' THEN arv_vastu + 1 ELSE arv_vastu END 
+    WHERE h_alguse_aeg = (SELECT MAX(h_alguse_aeg) FROM TULEMUSED) 
+      AND NOW() <= DATE_ADD((SELECT MAX(h_alguse_aeg) FROM TULEMUSED), INTERVAL 5 MINUTE);
+    
+    -- Insert a row into the LOGI table
+    INSERT INTO LOGI (haaletaja_id, otsus, muutus_aeg) 
+    VALUES (NEW.haaletaja_id, NEW.otsus, NOW());
   END IF;
 END
