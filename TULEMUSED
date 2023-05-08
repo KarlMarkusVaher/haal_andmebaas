@@ -1,0 +1,8 @@
+CREATE TABLE tulemus (
+  tulemus_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  haal_arv int(11),
+  arv_pool int(11),
+  arv_vastu int(11),
+  h_alguse_aeg datetime,
+  PRIMARY KEY (tulemus_id)
+);
