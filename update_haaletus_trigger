@@ -1,20 +1,19 @@
 CREATE TRIGGER `update_haaletus_trigger` BEFORE UPDATE ON `HAALETUS`
- FOR EACH ROW BEGIN
-    DECLARE voting_start DATETIME;
-
-	IF NEW.haaletus_aeg IS NULL THEN
-        SET NEW.haaletus_aeg = NOW();
+ FOR EACH ROW BEGIN 
+  DECLARE voting_start DATETIME;
+  SELECT MAX(haaletus_aeg) INTO voting_start FROM HAALETUS WHERE haaletaja_id = NEW.haaletaja_id;
+  IF NEW.otsus <> OLD.otsus THEN
+    IF NEW.haaletus_aeg >= DATE_ADD(voting_start, INTERVAL 5 MINUTE) THEN
+      SET NEW.otsus = OLD.otsus;
+    ELSE
+      UPDATE TULEMUSED 
+      SET
+          arv_pool = arv_pool + CASE WHEN NEW.otsus = 'for' THEN 1 ELSE 0 END - CASE WHEN OLD.otsus = 'for' THEN 1 ELSE 0 END,
+          arv_vastu = arv_vastu + CASE WHEN NEW.otsus = 'against' THEN 1 ELSE 0 END - CASE WHEN OLD.otsus = 'against' THEN 1 ELSE 0 END
+      WHERE h_alguse_aeg = (SELECT MAX(h_alguse_aeg) FROM TULEMUSED)
+        AND NOW() <= DATE_ADD((SELECT MAX(h_alguse_aeg) FROM TULEMUSED), INTERVAL 5 MINUTE);
+      SET NEW.haaletus_aeg = NOW();
     END IF;
-
-    SELECT MAX(haaletus_aeg) INTO voting_start FROM HAALETUS WHERE haaletaja_id = NEW.haaletaja_id;
-    IF NEW.otsus <> OLD.otsus THEN
-        IF NEW.haaletus_aeg > DATE_ADD(voting_start, INTERVAL 5 MINUTE) THEN
-            UPDATE TULEMUSED SET
-                arv_pool = arv_pool - CASE WHEN OLD.otsus = 'for' THEN 1 ELSE 0 END + CASE WHEN NEW.otsus = 'for' THEN 1 ELSE 0 END,
-                arv_vastu = arv_vastu - CASE WHEN OLD.otsus = 'against' THEN 1 ELSE 0 END + CASE WHEN NEW.otsus = 'against' THEN 1 ELSE 0 END
-            WHERE DATE(h_alguse_aeg) = DATE(voting_start); -- Use proper comment syntax
-            SET NEW.haaletus_aeg = NOW();
-        END IF;
-    END IF;
-    INSERT INTO LOGI (haaletaja_id, otsus, muutus_aeg) VALUES (NEW.haaletaja_id, NEW.otsus, NEW.haaletus_aeg);
+  END IF;
+  INSERT INTO LOGI (haaletaja_id, otsus, muutus_aeg) VALUES (NEW.haaletaja_id, NEW.otsus, NEW.haaletus_aeg);
 END
